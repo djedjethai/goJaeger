@@ -3,5 +3,6 @@ grpc/opentelemetry-go
 microcalc/web/node_modules
 
 kafka/writingMessages/opentelemetry-go
+kafka/writingMessages/kafka
 
 
