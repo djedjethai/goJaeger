@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package io.confluent.cloud.demo.domain1;
+
+option go_package = "getting-started-with-ccloud-golang/api/v1/proto";
+
+message Message {
+	string text = 1;
+	string carrier = 2;
+}
+
+

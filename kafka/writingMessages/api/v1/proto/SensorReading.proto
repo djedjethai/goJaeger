@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package io.confluent.cloud.demo.domain1;
+
+option go_package = "getting-started-with-ccloud-golang/api/v1/proto";
+
+message SensorReading {
+
+    message Device {
+        string deviceID = 1;
+        bool enabled = 2;
+    }
+
+    Device device = 1;
+    int64 dateTime = 2;
+    double reading = 3;
+}
+
+
