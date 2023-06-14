@@ -339,7 +339,7 @@ func producer(topic string) {
 /******************** Consumer ********************/
 /**************************************************/
 
-func consumeMessage(message kafka.Message) {
+func consumeMessage(message kafka.Message, tracer trace.Tracer) context.Context {
 	propagator := propagation.TraceContext{}
 
 	carrier := KafkaHeadersCarrier{}
@@ -350,10 +350,22 @@ func consumeMessage(message kafka.Message) {
 	ctx := context.Background()
 	ctx = propagator.Extract(ctx, carrier)
 
-	tracer := otel.Tracer("consumer-tracer")
-	_, span := tracer.Start(ctx, "consume")
+	// tracer := otel.Tracer("consumer-tracer")
+	_, span := tracer.Start(ctx, "consumer-???")
 
 	// Use the span for tracing within the consumer logic
+
+	span.End()
+
+	return ctx
+}
+
+func runSomeJobs(ctx context.Context, tracer trace.Tracer) {
+	_, span := tracer.Start(ctx, "run-some-jobs")
+
+	for i := 0; i < 1000000; i++ {
+
+	}
 
 	span.End()
 }
@@ -403,22 +415,9 @@ func consumer(topic string) {
 
 	run := true
 
+	tracer := otel.Tracer("consumer-tracer")
+
 	for run {
-		// record, err := c.ReadMessage(-1)
-		// if err == nil {
-		// 	// sensorReading := &pb.SensorReading{}
-		// 	msg := &pb.Message{}
-		// 	// err = proto.Unmarshal(record.Value[7:], sensorReading)
-		// 	err = proto.Unmarshal(record.Value[7:], msg)
-		// 	if err != nil {
-		// 		panic(fmt.Sprintf("Error deserializing the record: %s", err))
-		// 	}
-		// 	fmt.Printf("Message on %s: %s\n", record.TopicPartition, string(record.Value))
-		// 	// fmt.Println("seeeee: ", msg)
-		// } else if err.(kafka.Error).IsFatal() {
-		// 	// fmt.Println(err)
-		// 	log.Printf("Consumer error: %v \n", err)
-		// }
 
 		select {
 		case <-signals:
@@ -440,7 +439,13 @@ func consumer(topic string) {
 					panic(fmt.Sprintf("Error deserializing the record: %s", err))
 				}
 				fmt.Printf("Message on %s: %s\n", e.TopicPartition, string(e.Value))
-				consumeMessage(*e)
+
+				// add a span to the trace,
+				// at this point it says the the msg is arrived
+				ctx := consumeMessage(*e, tracer)
+
+				runSomeJobs(ctx, tracer)
+
 			case kafka.Error:
 				fmt.Printf("Error: %v\n", e)
 				// Handle the error here
