@@ -14,11 +14,13 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/yaml.v2"
-
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/trace"
+	// "google.golang.org/grpc/codes"
+	"gopkg.in/yaml.v2"
 
 	// "go.opentelemetry.io/otel/propagation"
 	httptrace "go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace"
@@ -114,7 +116,16 @@ func calcHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	calcRequest, err := ParseCalcRequest(req.Body)
+	// Retrieve the span from the request context
+	// Create a new outgoing trace with the parent span
+	tr := otel.Tracer("in-calcHandler")
+	// Create a new context and span
+	// this will be a child from calculate,
+	// and doing like so will show a specific event/span "generateRequest"
+	ctx, span := tr.Start(req.Context(), "generateRequest")
+	defer span.End()
+
+	calcRequest, err := ParseCalcRequest(req.Body, span)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -137,7 +148,7 @@ func calcHandler(w http.ResponseWriter, req *http.Request) {
 	request, _ := http.NewRequest("GET", url, nil)
 
 	// Create a new outgoing trace
-	ctx := req.Context()
+	// ctx := req.Context()
 	ctx, request = httptrace.W3C(ctx, request)
 	// Inject the context into the outgoing request
 	httptrace.Inject(ctx, request)
@@ -168,13 +179,21 @@ type CalcRequest struct {
 	Operands []int  `json:"operands"`
 }
 
-func ParseCalcRequest(body io.Reader) (CalcRequest, error) {
+func ParseCalcRequest(body io.Reader, span trace.Span) (CalcRequest, error) {
 	var parsedRequest CalcRequest
 
+	// Add event: attempting to parse body
+	span.AddEvent("attempting to parse body")
+	span.AddEvent(fmt.Sprintf("%s", body))
 	err := json.NewDecoder(body).Decode(&parsedRequest)
 	if err != nil {
+		// span.SetStatus(codes.InvalidArgument)
+		span.SetStatus(codes.Error, "the description")
+		span.AddEvent(err.Error())
+		span.End()
 		return parsedRequest, err
 	}
+	span.End()
 
 	return parsedRequest, nil
 }
