@@ -1,6 +1,10 @@
 grpc/opentelemetry-go
 
 microcalc/web/node_modules
+microcalc/opentelemetry-go
+
+microcalcSetMiddleware/web/node_modules
+microcalcSetMiddleware/opentelemetry-go
 
 kafka/writingMessages/opentelemetry-go
 kafka/writingMessages/kafka

@@ -203,6 +203,9 @@ func (s *Server) GetOrder(ctx context.Context, orderID *wrapperspb.StringValue) 
 	_, sp := tr.Start(ctx, "inTheServer")
 	defer sp.End()
 
+	// add a tag sp.SetAttributes(attribute.String("tag_name", "tag_value"))
+	sp.SetAttributes(attribute.String("method", "GetOrder"))
+
 	// srv implementation
 	ord := orderMap[orderID.Value]
 	return &ord, nil
