@@ -6,6 +6,9 @@ microcalc/opentelemetry-go
 microcalcSetMiddleware/web/node_modules
 microcalcSetMiddleware/opentelemetry-go
 
+jaeggerExportData/web/node_modules
+jaeggerExportData/opentelemetry-go
+
 kafka/writingMessages/opentelemetry-go
 kafka/writingMessages/kafka
 

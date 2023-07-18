@@ -1,0 +1,185 @@
+version: '3'
+
+# IF DELETE volumes elasticsearch-data DELETE elasticsearch.keystore before restart
+
+services:
+  jaeger:
+    image: jaegertracing/all-in-one:1.21
+    restart: always
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686"
+      - "14268:14268"
+      - "14250:14250"
+      - "9411:9411"
+    environment:
+      - SPAN_STORAGE_TYPE=elasticsearch
+        # - JAEGER_CONFIG=/etc/jaeger-config.yaml
+      - COLLECTOR_ZIPKIN_HTTP_PORT=9411
+      - ES_SERVER_URLS=http://elasticsearch:9200
+    volumes:
+      - ./jaeger-config.yaml:/etc/jaeger-config.yaml
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.0
+      # image: docker.elastic.co/elasticsearch/elasticsearch:8.8.1
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - ./elasticsearch-data:/usr/share/elasticsearch/data
+      - ./elasticsearch-config:/usr/share/elasticsearch/config
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3 
+    ulimits:
+      memlock:
+        soft: 262144 # sets the soft limit to 262,144 (256MB)
+        hard: 262144 # sets the hard limit to 262,144 (256MB)
+
+  kibana:
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    image: docker.elastic.co/kibana/kibana:7.15.0
+      # image: docker.elastic.co/kibana/kibana:8.6.2
+    labels:
+      co.elastic.logs/module: kibana
+    volumes:
+      # - certs:/usr/share/kibana/config/certs
+      - ./kibana-data:/usr/share/kibana/data
+    ports:
+      - 5601:5601
+    environment:
+      - SERVERNAME=kibana
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+        # - SERVER_SSL_ENABLED=false
+        # - XPACK_SECURITY_ENABLED=false
+        # - ELASTICSEARCH_USERNAME=kibana_system
+        # - ELASTICSEARCH_PASSWORD=password
+        # - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=config/certs/ca/ca.crt
+        # - XPACK_SECURITY_ENCRYPTIONKEY=${ENCRYPTION_KEY}
+        # - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${ENCRYPTION_KEY}
+        # - XPACK_REPORTING_ENCRYPTIONKEY=${ENCRYPTION_KEY}
+    mem_limit: 512MB
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s -I http://localhost:5601 | grep -q 'HTTP/1.1 302 Found'",
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 120
+
+
+# version: "3"
+# 
+# services:
+#   elasticsearch:
+#     image: docker.elastic.co/elasticsearch/elasticsearch:6.3.1
+#     networks:
+#       - elastic-jaeger
+#     ports:
+#       - "127.0.0.1:9200:9200"
+#       - "127.0.0.1:9300:9300"
+#     restart: on-failure
+#     environment:
+#       - cluster.name=jaeger-cluster
+#       - discovery.type=single-node
+#       - http.host=0.0.0.0
+#       - transport.host=127.0.0.1
+#       - ES_JAVA_OPTS=-Xms512m -Xmx512m
+#       - xpack.security.enabled=false
+#     volumes:
+#       - esdata:/usr/share/elasticsearch/data
+# 
+#   jaeger-collector:
+#     image: jaegertracing/jaeger-collector
+#     ports:
+#       - "14269:14269"
+#       - "14268:14268"
+#       - "14267:14267"
+#       - "9411:9411"
+#     networks:
+#       - elastic-jaeger
+#     restart: on-failure
+#     environment:
+#       - SPAN_STORAGE_TYPE=elasticsearch
+#     command: [
+#       "--es.server-urls=http://elasticsearch:9200",
+#       "--es.num-shards=1",
+#       "--es.num-replicas=0",
+#       "--log-level=error"
+#     ]
+#     depends_on:
+#       - elasticsearch
+# 
+#   jaeger-agent:
+#     image: jaegertracing/jaeger-agent
+#     hostname: jaeger-agent
+#     command: ["--collector.host-port=jaeger-collector:14267"]
+#     ports:
+#       - "5775:5775/udp"
+#       - "6831:6831/udp"
+#       - "6832:6832/udp"
+#       - "5778:5778"
+#     networks:
+#       - elastic-jaeger
+#     restart: on-failure
+#     environment:
+#       - SPAN_STORAGE_TYPE=elasticsearch
+#     depends_on:
+#       - jaeger-collector
+# 
+#   jaeger-query:
+#     image: jaegertracing/jaeger-query
+#     environment:
+#       - SPAN_STORAGE_TYPE=elasticsearch
+#       - no_proxy=localhost
+#     ports:
+#       - "16686:16686"
+#       - "16687:16687"
+#     networks:
+#       - elastic-jaeger
+#     restart: on-failure
+#     command: [
+#       "--es.server-urls=http://elasticsearch:9200",
+#       "--span-storage.type=elasticsearch",
+#       "--log-level=debug"
+#     ]
+#     depends_on:
+#       - jaeger-agent
+# 
+# volumes:
+#   esdata:
+#     driver: local
+# 
+# networks:
+#   elastic-jaeger:
+#     driver: bridge 
+
+
+
+#        #cassandra:
+#          #  image: cassandra:4.0.10
+#          #  ports:
+#          #    - "9042:9042"
+#          #  volumes:
+#          #    - ./cassandra-data:/var/lib/cassandra
+#          #    - ./create-schema.cql:/docker-entrypoint-initdb.d/create-schema.cql
+#          #  healthcheck:
+#          #    test: ["CMD-SHELL", "cqlsh -e 'DESCRIBE KEYSPACES;'"]
+#          #    interval: 10s
+#          #    timeout: 5s
+#          #    retries: 3
