@@ -22,6 +22,11 @@ services:
       - ES_SERVER_URLS=http://elasticsearch:9200
     volumes:
       - ./jaeger-config.yaml:/etc/jaeger-config.yaml
+    resources: # just added has not been tested
+      limits:
+        memory: 256M   # Set the maximum RAM limit, e.g., 256 megabytes
+      reservations:
+        memory: 128M   # Set the initial RAM reservation, e.g., 128 megabytes
     depends_on:
       elasticsearch:
         condition: service_healthy

@@ -14,3 +14,16 @@ kafka/writingMessages/kafka
 
 workOnTheSpan/opentelemetry-go
 
+jaeggerAllInOneExportDataNotSecure/web/node_modules
+jaeggerAllInOneExportDataNotSecure/kibana-data
+jaeggerAllInOneExportDataNotSecure/elasticsearch-data
+jaeggerAllInOneExportDataNotSecure/opentelemetry-go
+
+jaeggerExportDataNotSecure/web/node_modules
+jaeggerExportDataNotSecure/kibana-data
+jaeggerExportDataNotSecure/elasticsearch-data
+jaeggerExportDataNotSecure/opentelemetry-go
+jaeggerExportDataNotSecure/elasticsearch-config
+
+microcalcVerboseTraces/opentelemetry-go
+microcalcVerboseTraces/web/node_modules
