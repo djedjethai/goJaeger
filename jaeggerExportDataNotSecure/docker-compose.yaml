@@ -76,29 +76,28 @@ services:
       retries: 5
       start_period: 15s
 
-        #  jaeger-agent:
-        #    image: jaegertracing/jaeger-agent
-        #    hostname: jaeger-agent
-        #    command: ["--collector.host-port=jaeger-collector:14267"]
-        #    ports:
-        #      - "5775:5775/udp"
-        #      - "6831:6831/udp"
-        #      - "6832:6832/udp"
-        #      - "5778:5778"
-        #    networks:
-        #      - elastic-jaeger
-        #    restart: on-failure
-        #    environment:
-        #      - SPAN_STORAGE_TYPE=elasticsearch
-        #    depends_on:
-        #      jaeger_collector:
-        #        condition: service_healthy
-        #    healthcheck:
-        #      test: ["CMD-SHELL", "nc -z localhost 5778"]
-        #      interval: 30s
-        #      timeout: 10s
-        #      retries: 5
-        #      start_period: 15s
+  jaeger-agent:
+    image: jaegertracing/jaeger-agent:1.46.0
+    hostname: jaeger-agent
+    command: ["--reporter.grpc.host-port=jaeger-collector:14267"]
+      # command: ["--collector.host-port=jaeger-collector:14267", "--reporter.grpc.tls=false"]
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+    restart: on-failure
+    environment:
+      - SPAN_STORAGE_TYPE=elasticsearch
+    depends_on:
+      jaeger-collector:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 5778"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
 
 
 
