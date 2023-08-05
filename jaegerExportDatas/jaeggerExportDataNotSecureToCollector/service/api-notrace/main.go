@@ -34,17 +34,15 @@ import (
 // go get go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp
 
 const (
-	// jaegerEndpoint string = "http://127.0.0.1:14268/api/traces"
-	jaegerAgentEndpoint string = "localhost:6831"
-	service             string = "api"
-	environment         string = "development"
-	id                         = 0
+	jaegerEndpoint string = "http://127.0.0.1:14268/api/traces"
+	service        string = "api"
+	environment    string = "development"
+	id                    = 0
 )
 
 func tracerProvider(url string) (*tracesdk.TracerProvider, error) {
 	// Create the Jaeger exporter
-	// exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(url)))
-	exp, err := jaeger.New(jaeger.WithAgentEndpoint(jaeger.WithAgentHost(url)))
+	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(url)))
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +65,7 @@ var services Config
 
 func Run() {
 
-	tp, err := tracerProvider(jaegerAgentEndpoint)
+	tp, err := tracerProvider(jaegerEndpoint)
 	if err != nil {
 		log.Fatal(err)
 	}

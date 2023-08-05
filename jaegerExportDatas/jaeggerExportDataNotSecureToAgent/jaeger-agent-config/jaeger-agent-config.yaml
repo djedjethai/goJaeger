@@ -1,0 +1,7 @@
+receiver:
+  # Configuration for the UDP receiver
+  udp:
+    # Enable UDP receiver on port 6831
+    protocols: "udp"
+    host-port: "0.0.0.0:6831"
+

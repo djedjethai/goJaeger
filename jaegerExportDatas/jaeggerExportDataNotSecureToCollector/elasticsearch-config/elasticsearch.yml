@@ -1,0 +1,18 @@
+# Elasticsearch Configuration
+
+cluster.name: my-cluster
+node.name: my-node
+
+network.host: 0.0.0.0
+
+http.port: 9200
+
+discovery.seed_hosts: ["elasticsearch"]
+
+discovery.type: single-node
+
+# cluster.initial_master_nodes: ["my-node"]
+
+path.data: /usr/share/elasticsearch/data
+path.logs: /usr/share/elasticsearch/logs
+

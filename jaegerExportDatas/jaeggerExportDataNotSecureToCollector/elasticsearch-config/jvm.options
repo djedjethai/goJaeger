@@ -1,0 +1,18 @@
+# Elasticsearch JVM Options
+
+# Memory Configuration
+-Xms2g
+-Xmx2g
+-Xss1m
+
+# Garbage Collection Configuration
+-XX:+UseG1GC
+
+# File Descriptors Configuration
+-XX:-MaxFDLimit
+
+# Other Configuration Options
+-Djava.awt.headless=true
+-Dio.netty.tryReflectionSetAccessible=true
+-XX:MaxDirectMemorySize=512m
+

@@ -21,11 +21,10 @@ import (
 )
 
 const (
-	// jaegerEndpoint string = "http://127.0.0.1:14268/api/traces"
-	jaegerAgentEndpoint string = "http://localhost:6831"
-	service             string = "add"
-	environment         string = "development"
-	id                         = 1
+	jaegerEndpoint string = "http://127.0.0.1:14268/api/traces"
+	service        string = "add"
+	environment    string = "development"
+	id                    = 1
 )
 
 func tracerProvider(url string) (*tracesdk.TracerProvider, error) {
@@ -51,7 +50,7 @@ func tracerProvider(url string) (*tracesdk.TracerProvider, error) {
 
 func Run() {
 
-	tp, err := tracerProvider(jaegerAgentEndpoint)
+	tp, err := tracerProvider(jaegerEndpoint)
 	if err != nil {
 		log.Fatal(err)
 	}

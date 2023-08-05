@@ -1,0 +1,7 @@
+node_modules
+
+elasticsearch-data
+
+kibana-data
+
+opentelemetry-go/

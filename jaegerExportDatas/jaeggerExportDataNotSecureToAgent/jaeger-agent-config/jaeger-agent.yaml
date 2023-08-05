@@ -1,0 +1,14 @@
+# jaeger-agent.yaml
+reporter:
+  logSpans: true
+  agentHost: 127.0.0.1
+  agentPort: 6831
+  type: "udp"
+
+#receiver:
+#  # Configuration for the UDP receiver
+#  udp:
+#    # Enable UDP receiver on port 6831
+#    protocols: "udp"
+#    host-port: "0.0.0.0:6831"
+
