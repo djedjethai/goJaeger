@@ -40,6 +40,7 @@ const (
 	environment    string = "development"
 	id                    = 0
 	tracingLibrary        = "go.opentelemetry.io/otel/trace"
+	samplingRatio         = 0.5
 )
 
 // test like verbose mode, which ideally I would setup a end-point
@@ -82,7 +83,8 @@ func tracerProvider(url string) (*tracesdk.TracerProvider, error) {
 			attribute.String("environment", environment),
 			attribute.Int64("ID", id),
 		)),
-		// tracesdk.WithSampler(tracesdk.AlwaysSample()), does not do anything...
+		// tracesdk.WithSampler(tracesdk.AlwaysSample()), sample all trace ok for dev
+		tracesdk.WithSampler(tracesdk.TraceIDRatioBased(samplingRatio)), // sample 5%(0.05), good for prod
 	)
 	return tp, nil
 }
@@ -99,6 +101,20 @@ func TracingMiddleware(h http.HandlerFunc) http.HandlerFunc {
 		defer span.End()
 
 		span.SetAttributes(attribute.String("route", r.URL.EscapedPath()))
+
+		// inspect
+		// Extract the trace context
+		spanContext := trace.SpanContextFromContext(r.Context())
+
+		// Print traceparent and tracestate headers
+		fmt.Println("Traceparent:", spanContext.SpanID().String())
+		fmt.Println("TraceState: ", spanContext.TraceState().String())
+
+		isSampled := trace.SpanContextFromContext(r.Context()).IsSampled()
+		log.Println("In api middleware isSampled: ", isSampled)
+
+		// Read the current span's sampling decision
+		// isSampled := trace.FlagsSampled.IsSampled() // return true is sampled
 
 		h(w, r)
 
@@ -168,15 +184,30 @@ func enableCors(w *http.ResponseWriter, req *http.Request) {
 
 func calcHandler(w http.ResponseWriter, req *http.Request) {
 
+	ctx := req.Context()
+
 	enableCors(&w, req)
 	if (*req).Method == "OPTIONS" {
 		return
 	}
 
+	// Extract the trace context
+	spanContext := trace.SpanContextFromContext(req.Context())
+
+	// Print traceparent and tracestate headers
+	fmt.Println("Traceparent in calcHandler first:", spanContext.SpanID().String())
+	fmt.Println("TraceState in calcHandler first: ", spanContext.TraceState().String())
+
+	// START A NEW TRACE with a new traceID but still embeded into the parent's trace
+	// and the .IsSample() inherit so all good
 	// as parseCalcRequest is an important func we like to always trace it
 	// if it would not have been an important on then use the verbose
 	tr := otel.Tracer(tracingLibrary)
-	ctx, span := tr.Start(req.Context(), "Handle calcul requests")
+
+	ctx, span := tr.Start(
+		trace.ContextWithRemoteSpanContext(req.Context(), spanContext),
+		"Handle calcul requests")
+
 	span.SetAttributes(attribute.String("method", "calcHandler"))
 	defer span.End()
 
@@ -215,14 +246,34 @@ func calcHandler(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "could not find requested calculation method", http.StatusBadRequest)
 	}
 
+	isSampled := trace.SpanContextFromContext(ctx).IsSampled()
+	log.Println("In calcHandler isSampled: ", isSampled)
+
 	client := http.DefaultClient
 	request, _ := http.NewRequest("GET", url, nil)
+
+	// inspect
+	// Extract the trace context
+	spanContext = trace.SpanContextFromContext(ctx)
+
+	// Print traceparent and tracestate headers
+	fmt.Println("Traceparent in calcHandler second: ", spanContext.SpanID().String())
+	fmt.Println("TraceState in calcHandler second: ", spanContext.TraceState().String())
 
 	// Create a new outgoing trace
 	// ctx := req.Context()
 	ctx, request = httptrace.W3C(ctx, request)
 	// Inject the context into the outgoing request
-	httptrace.Inject(ctx, request)
+
+	spanContext = trace.SpanContextFromContext(ctx)
+
+	// Print traceparent and tracestate headers
+	fmt.Println("Traceparent in calcHandler after w3c: ", spanContext.SpanID().String())
+
+	isSampled = trace.SpanContextFromContext(ctx).IsSampled()
+	log.Println("In calcHandler isSampled after w3c: ", isSampled)
+	isSampledStr := strconv.FormatBool(isSampled)
+	request.Header.Set("Is-Sampled", isSampledStr)
 
 	res, err := client.Do(request)
 	if err != nil {
